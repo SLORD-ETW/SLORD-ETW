@@ -35,7 +35,8 @@ entertainment and a single dashboard**, with **no paid connectivity plans**.
 | 5G hub | ✅ Generic rebadged Chinese CPE (branded splash screen) | 🔧 Model/chipset, 12V input range, LAN port, SIM lock |
 | Heater | ✅ Truma Combi D 6 (diesel heating + hot water) | 🔧 Panel type: CP classic / CP plus / iNet X |
 | Victron | ✅ No GX device | 🔧 List devices (SmartShunt, MPPT, Orion, inverter…) and ports (Bluetooth / VE.Direct) |
-| Head unit | ✅ 10.1" budget quad-core, "Android 15", 4+64 GB, wireless CarPlay/AA, GPS, Wi-Fi | 🔧 Real SoC + Android version (CPU-Z), MCU version. Limited settings, voice broken, mic not switchable, weak Bluetooth |
+| Vehicle | ✅ Mercedes Sprinter (W907-style dash) | – |
+| Head unit | ✅ 10.1" budget quad-core, model **K2401P**, sold as "Android 15", 4+64 GB, wireless CarPlay/AA, GPS, Wi-Fi. USB updater app V3.7.6. On the hub's Wi-Fi (`192.168.0.x`) | 🔧 Real SoC + Android version (CPU-Z or ADB), MCU version. Limited settings, voice broken, mic not switchable, weak Bluetooth |
 | Apple TV | ❓ ~15 years old | 🔧 Model number on underside |
 | TV / screen | ❓ | 🔧 Size, 12V or 230V, 4K or HD |
 | Camper Fire Stick | 💡 Use a spare from home | Pick model to match TV (see section 9) |
@@ -173,6 +174,39 @@ Mobile networks use **CGNAT**, so you can't open ports to reach the camper.
 
 - [ ] Install **CPU-Z**: note real SoC, Android version and RAM
 - [ ] Note **MCU version** (Settings → About)
+
+### Findings so far
+- **Model:** K2401P (Settings → About car device). Storage 64 GB.
+- **Settings menu** says "Apps & notifications", which is how **Android 10/11** labels it (Android 12+ says "Apps"). So the "Android 15" is very likely a label on an older Android.
+- **USB updater** (runs automatically when a USB stick is plugged in), translated:
+
+  | On screen | Meaning | Result |
+  |---|---|---|
+  | MCU升级状态 | MCU upgrade | No upgrade file found |
+  | 拷贝固件 | Copy firmware | No upgrade file found |
+  | 工厂设置 | Factory settings (import config) | No factory config found |
+  | 拷贝地图 | Copy map data | No map data found |
+  | 清除文件 | Delete files | No delete config found |
+  | APP版本 | Updater version | V3.7.6 |
+  | 所有操作已完成，设备可拔出! | All done, USB can be removed | Nothing was changed |
+
+  The updater looks for specific files on the stick (MCU update, firmware, a factory config file, maps). **Only use files supplied by the seller for the K2401P.** A factory config file from the seller is a safe way to change hidden settings such as microphone routing.
+
+### Find the real chip with ADB (same method as the Fire Sticks)
+1. Settings → About car device → tap **Build number** 7 times → Developer options.
+2. Turn on **USB debugging** / **ADB over network** (if offered).
+3. From a laptop on the same Wi-Fi:
+   ```bash
+   adb connect <head-unit-ip>:5555
+   adb shell getprop ro.board.platform      # chip family
+   adb shell getprop ro.build.version.release  # real Android version
+   adb shell getprop | grep -i -E "mcu|hardware|product"
+   ```
+
+### Ask the seller for
+- [ ] Factory settings password
+- [ ] A factory config file that sets the **external microphone**
+- [ ] The correct firmware for the K2401P (only if a fix is needed)
 
 ### Don't flash firmware
 Community ROMs and mods (XDA) are for **FYT / UIS7862** 8-core units, not these. Wrong firmware is the most common way to brick a unit. Treat this one as a **screen for native Android apps and the camper dashboard**. 💡 If you ever want a moddable unit, an 8-core UIS7862 (FYT) is the step up.
