@@ -36,7 +36,7 @@ entertainment and a single dashboard**, with **no paid connectivity plans**.
 | Heater | ✅ Truma Combi D 6 (diesel heating + hot water) | 🔧 Panel type: CP classic / CP plus / iNet X |
 | Victron | ✅ No GX device | 🔧 List devices (SmartShunt, MPPT, Orion, inverter…) and ports (Bluetooth / VE.Direct) |
 | Vehicle | ✅ Mercedes Sprinter (W907-style dash) | – |
-| Head unit | ✅ 10.1" budget quad-core, model **K2401P**, sold as "Android 15", 4+64 GB, wireless CarPlay/AA, GPS, Wi-Fi. USB updater app V3.7.6. On the hub's Wi-Fi (`192.168.0.x`) | 🔧 Real SoC + Android version (CPU-Z or ADB), MCU version. Limited settings, voice broken, mic not switchable, weak Bluetooth |
+| Head unit | ✅ 10.1" budget quad-core, model **K2401P**, sold as "Android 15", 4+64 GB, wireless CarPlay/AA, GPS, Wi-Fi. USB updater app V3.7.6. On the hub's Wi-Fi (`192.168.0.x`) | ✅ CPU-Z: 4× Cortex-A53 1.8 GHz, PowerVR GE8300, **real Android 10 (API 29)**, 32-bit, patch 2021-01. 🔧 Exact chip name, MCU version. Limited settings, voice broken, mic not switchable, weak Bluetooth |
 | Apple TV | ❓ ~15 years old | 🔧 Model number on underside |
 | TV / screen | ❓ | 🔧 Size, 12V or 230V, 4K or HD |
 | Camper Fire Stick | 💡 Use a spare from home | Pick model to match TV (see section 9) |
@@ -177,7 +177,26 @@ Mobile networks use **CGNAT**, so you can't open ports to reach the camper.
 
 ### Findings so far
 - **Model:** K2401P (Settings → About car device). Storage 64 GB.
-- **Settings menu** says "Apps & notifications", which is how **Android 10/11** labels it (Android 12+ says "Apps"). So the "Android 15" is very likely a label on an older Android.
+- **CPU-Z results (confirmed):**
+
+  | Item | Value | Meaning |
+  |---|---|---|
+  | CPU | 4× ARM Cortex-A53 @ 1.8 GHz | Entry-level quad-core |
+  | GPU | PowerVR Rogue GE8300 | Budget GPU. Consistent with a MediaTek MT8766-class (or Allwinner A133-class) chip; `getprop ro.board.platform` will name it |
+  | Android version shown | 15 | **Fake label** |
+  | API level | **29** | **Real version: Android 10** |
+  | Security patch | 2021-01-05 | Old; avoid sensitive logins (banking etc.) on this unit |
+  | Build | K2401_NWD_S212802.20251217 | Firmware built Dec 2025 |
+  | Kernel | 4.9.170, armv8l | **32-bit Android** on 64-bit cores |
+  | Root | No | |
+  | Google Play Services | 26.32.34 | Up to date, Play Store works |
+  | Uptime | 12 days | Unit sleeps rather than powering off with the ignition |
+
+- **What this means:**
+  - Choose **32-bit (armeabi-v7a / arm)** APK versions when sideloading (e.g. SmartTube's armeabi-v7a build). A few newer apps are 64-bit only and won't install.
+  - Fine for maps, music, VictronConnect, a light Home Assistant dashboard, and SmartTube at **720p/1080p** (set codec to AVC/VP9; no AV1).
+  - No community ROMs for this hardware: **don't flash**. Debloat with ADB `pm disable-user` instead (same as the Fire Sticks).
+  - Because it sleeps instead of powering off, check its standby draw on whichever battery feeds it.
 - **USB updater** (runs automatically when a USB stick is plugged in), translated:
 
   | On screen | Meaning | Result |
