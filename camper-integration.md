@@ -258,6 +258,61 @@ CarPlay only allows Apple-approved driving apps (no YouTube, browser, Home Assis
 - Set SmartTube quality to **720p/1080p** to save mobile data.
 - **UK law:** no video while driving. SmartTube when parked only.
 
+### Teardown & ADB investigation (deep dive, Nov 2026)
+
+Confirmed hardware/firmware identity:
+
+| Attribute | Value |
+|---|---|
+| Model | **K2401P** |
+| Platform | **NWD** (packages `com.nwd.*`, `nwdapp`; build string `K2401_NWD_S212802`) |
+| SoC | **Allwinner A133** (`sun50iw10p1`; 4× Cortex-A53 @1.8 GHz, PowerVR GE8300) |
+| OS | **Android 10** (API 29) — falsely labelled "Android 15"; 32-bit userspace (armv8l) |
+| RAM/Storage | 4 GB / 64 GB |
+| Firmware builds seen | running `...20251217`; newer `...20260324`, `...20261017` present on device |
+
+**Vehicle / CAN profile** (from `canconfig.xml` on the file share):
+- CAN decoder = **"Oudi"**, protocol family **2E**, UART at **38400 baud** (matches the live `du <- 2E 08 ...` packets in the unit's Debug→Log monitor; those carry the RTC clock, etc.)
+- Profile: **Benz Sprinter "2006–2018 (2nd gen / W906)"** — this profile only appeared *after* a firmware update.
+- Flags: `hasAir:false`, `hasReverseControlSystem:false` → climate/reverse not integrated via CAN.
+- ⚠️ For Home Assistant vehicle data, don't tap this UART (the head unit owns it). Use a separate OBD-II BLE dongle or CAN reader.
+
+**Built-in file-share server** — the unit runs a web file server (Settings → the FileShare feature) on a **high port (e.g. :36715)**, a Vue/Vite SPA called "FileShare". It serves **/sdcard read-write** (download + upload). Useful folders: `Boot Logo`/`boot.logo`/`.boot_logo` (splash), `themeData` (UI skin), `canconfig.xml`, `upgrade` (holds the full firmware .zip packages), `preset_install`. ⚠️ It exposes storage to anyone on the Wi-Fi — don't leave it running; keep the hotspot password private.
+
+**ADB enablement — methods tried and results:**
+
+| Method | Result |
+|---|---|
+| Developer options (tap Build number ×7) | **Password-locked** ("Please Input Password") |
+| `need_enable_console` empty file on USB (known NWD trick) | **No effect**, even after reboot with stick inserted |
+| USB-A ↔ USB-A cable + `adb devices` | Empty — **port is host-only** (a `filter_usb` sysfs node exists, may be why) |
+| Network scan (`nmap -p-`) | Only ports 3152 / 14035 / 57677 open; **5555 closed**. Those three are vendor services, **not** ADB (adb shows `offline`) |
+| boot.img inspection | System-as-root ramdisk (`fstab.sun50iw10p1`), no ADB props present |
+| vendor.img inspection | **Stock Allwinner**, no `nwd` customisation → console/adb gate is elsewhere |
+| system.img inspection | No adb/console trigger in `init.rc`; `nwd` settings/factory app is in the **product** partition |
+
+**Candidate factory/developer passwords** (community-reported for K2401/NWD; unverified — try in the password box): `345543` (dev-options input), `16176699` + `1617` (factory), `111333` (UI/style), `7890`, `8888`, `1234`, `0000`; some NWD firmware also accepts **today's date** as `YYYY.MM.DD` or `7890`+current hour.
+
+**Firmware package internals** (Allwinner "sunxi" OTA, ~1.1 GB zip). Reusable extraction recipe on a Linux laptop:
+```bash
+sudo apt install -y brotli p7zip-full
+wget https://raw.githubusercontent.com/xpirt/sdat2img/master/sdat2img.py
+# per partition (system / vendor / product):
+brotli -d <part>.new.dat.br
+python3 sdat2img.py <part>.transfer.list <part>.new.dat <part>.img
+7z x -o<part>_out <part>.img          # 7z reads ext4 without mounting/root
+```
+`boot.img` unpacks with `abootimg -x`; ramdisk is system-as-root (no props). `boot-resource.fex` holds boot-logo resources.
+
+**Key sysfs controls found in `/system/init.rc`** (most are `chmod 0666`, i.e. writable from a shell once ADB works):
+- **`/sys/devices/platform/nwdpower/mic_select`** → **internal/external microphone switch**. This is the fix for the broken voice input: `echo 1 > …/mic_select` (or `0`). Writable by any shell; MacroDroid (pre-installed) may also be able to toggle it.
+- `/sys/kernel/nwdtest_common/config_logo` → boot-logo control (custom splash).
+- `/sys/kernel/nwdtest_common/config_car` → car/CAN config.
+- `/sys/kernel/nwdtest_common/filter_usb` → USB filter (suspected cause of the host-only USB port).
+- Car/CAN config partitions mounted at `/data/nwdconfig` and `/data/nwdappconfig` (from `/dev/block/by-name/nwdconfig`, `carconfig`).
+
+**Status:** ADB not yet enabled. Next step = extract the **product** partition to find the console/ADB-enable mechanism and/or the factory password inside the `com.nwd.*` app. If that fails, the password comes from the eBay seller. **ADB is only needed for debloating** — SmartTube, Victron, maps and the custom boot logo are all achievable without it.
+
 ---
 
 ## 9. Entertainment
