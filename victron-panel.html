@@ -8,39 +8,40 @@
   :root{
     --bg:#0b0f14; --card:#151b23; --edge:#232c38;
     --txt:#e6edf3; --dim:#8b98a8;
-    --batt:#3fb950; --solar:#e3b341; --load:#58a6ff; --warn:#f85149;
+    --batt:#3fb950; --solar:#e3b341; --load:#58a6ff; --sun:#f0883e; --warn:#f85149;
     --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{background:var(--bg);color:var(--txt);font-family:var(--font);
-    -webkit-user-select:none;user-select:none;overflow:hidden;padding:18px}
-  .wrap{height:100%;display:flex;flex-direction:column;gap:14px}
-  /* top bar */
-  .top{display:flex;align-items:flex-end;justify-content:space-between}
-  .clock{font-size:12vw;font-weight:600;line-height:.9;letter-spacing:-2px}
-  .date{font-size:2.6vw;color:var(--dim);margin-top:6px}
-  .demo{font-size:1.4vw;color:var(--warn);border:1px solid var(--warn);
-    border-radius:999px;padding:4px 12px;opacity:.85}
-  /* grid */
+    -webkit-user-select:none;user-select:none;overflow:hidden;padding:16px}
+  .wrap{height:100%;display:flex;flex-direction:column;gap:12px}
+  .top{display:flex;align-items:center;justify-content:space-between}
+  .clock{font-size:10vw;font-weight:600;line-height:.9;letter-spacing:-2px}
+  .date{font-size:2.3vw;color:var(--dim);margin-top:4px}
+  .wx{display:flex;align-items:center;gap:14px;text-align:right}
+  .wx .ico{font-size:7vw;line-height:1}
+  .wx .t{font-size:5vw;font-weight:700}
+  .wx .meta{font-size:1.6vw;color:var(--dim);line-height:1.4}
   .grid{flex:1;display:grid;grid-template-columns:1.4fr 1fr 1fr;
-    grid-template-rows:1fr 1fr;gap:14px}
+    grid-template-rows:1fr 1fr;gap:12px}
   .card{background:var(--card);border:1px solid var(--edge);border-radius:18px;
-    padding:18px 22px;display:flex;flex-direction:column;justify-content:space-between}
-  .card h2{font-size:1.5vw;font-weight:500;color:var(--dim);
+    padding:16px 20px;display:flex;flex-direction:column;justify-content:space-between}
+  .card h2{font-size:1.4vw;font-weight:500;color:var(--dim);
     text-transform:uppercase;letter-spacing:1px}
-  .val{font-size:6vw;font-weight:700;line-height:1}
-  .unit{font-size:2.2vw;color:var(--dim);font-weight:500;margin-left:6px}
-  .sub{font-size:1.5vw;color:var(--dim)}
-  .batt .val{color:var(--batt)} .solar .val{color:var(--solar)} .load .val{color:var(--load)}
+  .val{font-size:5.2vw;font-weight:700;line-height:1}
+  .unit{font-size:2vw;color:var(--dim);font-weight:500;margin-left:6px}
+  .sub{font-size:1.4vw;color:var(--dim)}
+  .batt .val{color:var(--batt)} .solar .val{color:var(--solar)}
+  .load .val{color:var(--load)} .suncard .val{color:var(--sun)}
   .big{grid-row:span 2;align-items:stretch}
-  .bar{height:26px;background:#0b0f14;border-radius:999px;overflow:hidden;border:1px solid var(--edge)}
-  .fill{height:100%;background:linear-gradient(90deg,var(--batt),#58d06a);width:82%;
-    transition:width 1s ease}
-  .row2{display:flex;gap:10px}
-  .row2 .card{flex:1}
-  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--batt);
+  .bar{height:24px;background:#0b0f14;border-radius:999px;overflow:hidden;border:1px solid var(--edge)}
+  .fill{height:100%;background:linear-gradient(90deg,var(--batt),#58d06a);width:82%;transition:width 1s ease}
+  .dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:var(--batt);
     margin-right:8px;box-shadow:0 0 10px var(--batt)}
+  .suntimes{display:flex;justify-content:space-between;font-size:2.2vw;font-weight:600}
+  .suntimes span{color:var(--sun)}
+  .demo{position:fixed;bottom:6px;right:12px;font-size:1.1vw;color:var(--warn);opacity:.7}
 </style>
 </head>
 <body>
@@ -50,7 +51,15 @@
       <div class="clock" id="clock">--:--</div>
       <div class="date" id="date">—</div>
     </div>
-    <div class="demo">● DEMO DATA — placeholder until Home Assistant / Victron is wired</div>
+    <div class="wx">
+      <div class="ico" id="wx-ico">··</div>
+      <div>
+        <div class="t"><span id="wx-temp">--</span>°</div>
+        <div class="meta" id="wx-desc">loading…</div>
+        <div class="meta" id="wx-hilo"></div>
+        <div class="meta" id="wx-place"></div>
+      </div>
+    </div>
   </div>
 
   <div class="grid">
@@ -67,7 +76,13 @@
     <div class="card solar">
       <h2>Solar</h2>
       <div><span class="val" id="pv">126</span><span class="unit">W</span></div>
-      <div class="sub" id="pv-sub">18.4 V · yield today 0.84 kWh</div>
+      <div class="sub">yield today 0.84 kWh</div>
+    </div>
+
+    <div class="card suncard">
+      <h2>Daylight</h2>
+      <div class="suntimes"><div>▲ <span id="sunrise">--:--</span></div><div>▼ <span id="sunset">--:--</span></div></div>
+      <div class="sub" id="daylight">—</div>
     </div>
 
     <div class="card load">
@@ -77,41 +92,100 @@
     </div>
 
     <div class="card">
-      <h2>Inside</h2>
-      <div><span class="val" id="tin">19.4</span><span class="unit">°C</span></div>
-      <div class="sub">humidity 54%</div>
-    </div>
-
-    <div class="card">
-      <h2>Water / Heat</h2>
-      <div><span class="val" id="water">42</span><span class="unit">°C</span></div>
-      <div class="sub" id="heat-sub">Truma: eco · hot water on</div>
+      <h2>Climate</h2>
+      <div><span class="val" id="tin">19.4</span><span class="unit">°C</span><span class="sub"> inside</span></div>
+      <div class="sub" id="heat-sub">Truma: eco · water 42°C</div>
     </div>
   </div>
 </div>
+<div class="demo" id="demo">● battery/solar/load/inside = DEMO until Victron/HA wired</div>
 
 <script>
-  // clock
+  /* ====== EDIT THIS: your location (Fire tablets have no GPS) ====== */
+  var LAT = 51.48, LON = -0.10, PLACE = "Set location in file";
+  /* Later, Home Assistant can overwrite these from the van's GPS.      */
+
+  /* ---------- clock ---------- */
   function tick(){
-    const d=new Date();
-    const hh=String(d.getHours()).padStart(2,'0');
-    const mm=String(d.getMinutes()).padStart(2,'0');
-    document.getElementById('clock').textContent=hh+':'+mm;
+    var d=new Date();
+    document.getElementById('clock').textContent=
+      String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
     document.getElementById('date').textContent=
       d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
   }
   tick(); setInterval(tick,1000);
 
-  // gentle demo wander so the panel looks alive (replace with real feed later)
-  function rnd(base,spread){return base+(Math.random()-0.5)*spread;}
+  /* ---------- sunrise/sunset (offline, SunCalc core, MIT) ---------- */
+  var SunCalc=(function(){
+    var PI=Math.PI,sin=Math.sin,cos=Math.cos,tan=Math.tan,asin=Math.asin,atan=Math.atan2,acos=Math.acos,rad=PI/180,
+    dayMs=86400000,J1970=2440588,J2000=2451545,e=rad*23.4397;
+    function toJulian(d){return d.valueOf()/dayMs-0.5+J1970;}
+    function fromJulian(j){return new Date((j+0.5-J1970)*dayMs);}
+    function toDays(d){return toJulian(d)-J2000;}
+    function dec(l,b){return asin(sin(b)*cos(e)+cos(b)*sin(e)*sin(l));}
+    function sma(d){return rad*(357.5291+0.98560028*d);}
+    function ecl(M){var C=rad*(1.9148*sin(M)+0.02*sin(2*M)+0.0003*sin(3*M));return M+C+rad*102.9372+PI;}
+    var J0=0.0009;
+    function appT(Ht,lw,n){return J0+(Ht+lw)/(2*PI)+n;}
+    function stJ(ds,M,L){return J2000+ds+0.0053*sin(M)-0.0069*sin(2*L);}
+    function ha(h,phi,d){return acos((sin(h)-sin(phi)*sin(d))/(cos(phi)*cos(d)));}
+    function getSet(h,lw,phi,d,n,M,L){return stJ(appT(ha(h,phi,d),lw,n),M,L);}
+    return {getTimes:function(date,lat,lng){
+      var lw=rad*-lng,phi=rad*lat,d=toDays(date),n=Math.round(d-J0-lw/(2*PI)),
+      ds=appT(0,lw,n),M=sma(ds),L=ecl(M),dc=dec(L,0),
+      Jnoon=stJ(ds,M,L),Jset=getSet(-0.833*rad,lw,phi,dc,n,M,L);
+      return {sunrise:fromJulian(Jnoon-(Jset-Jnoon)),sunset:fromJulian(Jset)};
+    }};
+  })();
+  function hhmm(d){return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');}
+  function updateSun(){
+    try{
+      var t=SunCalc.getTimes(new Date(),LAT,LON), now=new Date();
+      document.getElementById('sunrise').textContent=hhmm(t.sunrise);
+      document.getElementById('sunset').textContent=hhmm(t.sunset);
+      var msg;
+      if(now<t.sunrise){var m=Math.round((t.sunrise-now)/60000);msg='Sunrise in '+Math.floor(m/60)+'h '+(m%60)+'m';}
+      else if(now<t.sunset){var m2=Math.round((t.sunset-now)/60000);msg=Math.floor(m2/60)+'h '+(m2%60)+'m daylight left';}
+      else msg='Sun down';
+      document.getElementById('daylight').textContent=msg;
+    }catch(e){document.getElementById('daylight').textContent='—';}
+  }
+  updateSun(); setInterval(updateSun,60000);
+
+  /* ---------- weather (online; Open-Meteo, no key) ---------- */
+  var WMO={0:['Clear','☀️'],1:['Mainly clear','🌤️'],2:['Partly cloudy','⛅'],3:['Overcast','☁️'],
+    45:['Fog','🌫️'],48:['Fog','🌫️'],51:['Drizzle','🌦️'],53:['Drizzle','🌦️'],55:['Drizzle','🌦️'],
+    61:['Rain','🌧️'],63:['Rain','🌧️'],65:['Heavy rain','🌧️'],66:['Freezing rain','🌧️'],67:['Freezing rain','🌧️'],
+    71:['Snow','❄️'],73:['Snow','❄️'],75:['Heavy snow','❄️'],77:['Snow grains','❄️'],
+    80:['Showers','🌦️'],81:['Showers','🌦️'],82:['Heavy showers','🌧️'],85:['Snow showers','❄️'],86:['Snow showers','❄️'],
+    95:['Thunderstorm','⛈️'],96:['Thunderstorm','⛈️'],99:['Thunderstorm','⛈️']};
+  function updateWeather(){
+    document.getElementById('wx-place').textContent=PLACE;
+    var url='https://api.open-meteo.com/v1/forecast?latitude='+LAT+'&longitude='+LON+
+      '&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min&timezone=auto';
+    fetch(url).then(function(r){return r.json();}).then(function(j){
+      var c=j.current, code=c.weather_code, w=WMO[code]||['—','·'];
+      document.getElementById('wx-temp').textContent=Math.round(c.temperature_2m);
+      document.getElementById('wx-ico').textContent=w[1];
+      document.getElementById('wx-desc').textContent=w[0];
+      document.getElementById('wx-hilo').textContent=
+        'H '+Math.round(j.daily.temperature_2m_max[0])+'°  L '+Math.round(j.daily.temperature_2m_min[0])+'°';
+    }).catch(function(){
+      document.getElementById('wx-desc').textContent='offline';
+      document.getElementById('wx-ico').textContent='📡';
+    });
+  }
+  updateWeather(); setInterval(updateWeather,900000); /* every 15 min */
+
+  /* ---------- demo Victron/Truma wander (replace with real feed) ---------- */
+  function rnd(b,s){return b+(Math.random()-0.5)*s;}
   function demo(){
-    const soc=Math.round(rnd(82,2));
+    var soc=Math.round(rnd(82,2));
     document.getElementById('soc').textContent=soc;
     document.getElementById('fill').style.width=soc+'%';
     document.getElementById('pv').textContent=Math.round(rnd(126,40));
     document.getElementById('load').textContent=Math.round(rnd(37,10));
     document.getElementById('tin').textContent=rnd(19.4,0.4).toFixed(1);
-    document.getElementById('water').textContent=Math.round(rnd(42,3));
   }
   demo(); setInterval(demo,4000);
 </script>
