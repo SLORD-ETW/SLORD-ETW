@@ -311,7 +311,25 @@ python3 sdat2img.py <part>.transfer.list <part>.new.dat <part>.img
 - `/sys/kernel/nwdtest_common/filter_usb` → USB filter (suspected cause of the host-only USB port).
 - Car/CAN config partitions mounted at `/data/nwdconfig` and `/data/nwdappconfig` (from `/dev/block/by-name/nwdconfig`, `carconfig`).
 
-**Status:** ADB not yet enabled. Next step = extract the **product** partition to find the console/ADB-enable mechanism and/or the factory password inside the `com.nwd.*` app. If that fails, the password comes from the eBay seller. **ADB is only needed for debloating** — SmartTube, Victron, maps and the custom boot logo are all achievable without it.
+**Breakthrough — ADB is pre-configured, just gated.** `/system/build.prop` ships with:
+```
+persist.service.adb.enable=1     # adbd meant to run
+service.adb.tcp.port=5555        # on TCP 5555
+ro.adb.secure=0                  # NO "Allow debugging?" prompt
+ro.debuggable=1                  # adb shell runs as ROOT
+```
+So when ADB comes up it is **root, no auth, over the network** — the best case. It's held off only by an `init.rc` gate:
+```
+on property:persist.sys.nwd.console.enable=1   # (init.rc ~line 973)
+on property:persist.sys.nwd.console.enable=0   # default 0 → port 5555 closed
+```
+The `need_enable_console` USB file is meant to set that property to 1 but did **not** fire on this firmware.
+
+**No-password route to try next.** The USB updater scans for a factory-config file ("工厂设置 / import factory config"), and `/system/config/app/FactoryConfig.ini` already sets `persist.sys.nwd.*` properties. Adding `persist.sys.nwd.console.enable=1` through that import path should flip the gate and bring up **root ADB with no seller password**. Still to confirm: the exact factory-config filename/format the updater imports (grep the images for `FactoryConfig` / the import handler).
+
+**Fallbacks:** the factory/developer password from the eBay seller, or decompile the nwd settings/car app (`pout/app/SettingsSetup`, `pout/priv-app/SettingsIntelligence`) to read the password check.
+
+**Status:** ADB not yet enabled, but the path is clear and promising. **ADB is only needed for debloating** — SmartTube, Victron, maps and the custom boot logo all work without it.
 
 ---
 
