@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Camper Panel</title>
+<style>
+  :root{
+    --bg:#0b0f14; --card:#151b23; --edge:#232c38;
+    --txt:#e6edf3; --dim:#8b98a8;
+    --batt:#3fb950; --solar:#e3b341; --load:#58a6ff; --warn:#f85149;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:var(--font);
+    -webkit-user-select:none;user-select:none;overflow:hidden;padding:18px}
+  .wrap{height:100%;display:flex;flex-direction:column;gap:14px}
+  /* top bar */
+  .top{display:flex;align-items:flex-end;justify-content:space-between}
+  .clock{font-size:12vw;font-weight:600;line-height:.9;letter-spacing:-2px}
+  .date{font-size:2.6vw;color:var(--dim);margin-top:6px}
+  .demo{font-size:1.4vw;color:var(--warn);border:1px solid var(--warn);
+    border-radius:999px;padding:4px 12px;opacity:.85}
+  /* grid */
+  .grid{flex:1;display:grid;grid-template-columns:1.4fr 1fr 1fr;
+    grid-template-rows:1fr 1fr;gap:14px}
+  .card{background:var(--card);border:1px solid var(--edge);border-radius:18px;
+    padding:18px 22px;display:flex;flex-direction:column;justify-content:space-between}
+  .card h2{font-size:1.5vw;font-weight:500;color:var(--dim);
+    text-transform:uppercase;letter-spacing:1px}
+  .val{font-size:6vw;font-weight:700;line-height:1}
+  .unit{font-size:2.2vw;color:var(--dim);font-weight:500;margin-left:6px}
+  .sub{font-size:1.5vw;color:var(--dim)}
+  .batt .val{color:var(--batt)} .solar .val{color:var(--solar)} .load .val{color:var(--load)}
+  .big{grid-row:span 2;align-items:stretch}
+  .bar{height:26px;background:#0b0f14;border-radius:999px;overflow:hidden;border:1px solid var(--edge)}
+  .fill{height:100%;background:linear-gradient(90deg,var(--batt),#58d06a);width:82%;
+    transition:width 1s ease}
+  .row2{display:flex;gap:10px}
+  .row2 .card{flex:1}
+  .dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--batt);
+    margin-right:8px;box-shadow:0 0 10px var(--batt)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date">—</div>
+    </div>
+    <div class="demo">● DEMO DATA — placeholder until Home Assistant / Victron is wired</div>
+  </div>
+
+  <div class="grid">
+    <div class="card big batt">
+      <h2><span class="dot"></span>Leisure Battery</h2>
+      <div>
+        <div><span class="val" id="soc">82</span><span class="unit">%</span></div>
+        <div class="sub" id="batt-sub">13.2 V · −4.1 A · discharging</div>
+      </div>
+      <div class="bar"><div class="fill" id="fill"></div></div>
+      <div class="sub" id="ttg">Time to go: ~14 h 20 m</div>
+    </div>
+
+    <div class="card solar">
+      <h2>Solar</h2>
+      <div><span class="val" id="pv">126</span><span class="unit">W</span></div>
+      <div class="sub" id="pv-sub">18.4 V · yield today 0.84 kWh</div>
+    </div>
+
+    <div class="card load">
+      <h2>DC Load</h2>
+      <div><span class="val" id="load">37</span><span class="unit">W</span></div>
+      <div class="sub">fridge · lights · pump</div>
+    </div>
+
+    <div class="card">
+      <h2>Inside</h2>
+      <div><span class="val" id="tin">19.4</span><span class="unit">°C</span></div>
+      <div class="sub">humidity 54%</div>
+    </div>
+
+    <div class="card">
+      <h2>Water / Heat</h2>
+      <div><span class="val" id="water">42</span><span class="unit">°C</span></div>
+      <div class="sub" id="heat-sub">Truma: eco · hot water on</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // clock
+  function tick(){
+    const d=new Date();
+    const hh=String(d.getHours()).padStart(2,'0');
+    const mm=String(d.getMinutes()).padStart(2,'0');
+    document.getElementById('clock').textContent=hh+':'+mm;
+    document.getElementById('date').textContent=
+      d.toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'});
+  }
+  tick(); setInterval(tick,1000);
+
+  // gentle demo wander so the panel looks alive (replace with real feed later)
+  function rnd(base,spread){return base+(Math.random()-0.5)*spread;}
+  function demo(){
+    const soc=Math.round(rnd(82,2));
+    document.getElementById('soc').textContent=soc;
+    document.getElementById('fill').style.width=soc+'%';
+    document.getElementById('pv').textContent=Math.round(rnd(126,40));
+    document.getElementById('load').textContent=Math.round(rnd(37,10));
+    document.getElementById('tin').textContent=rnd(19.4,0.4).toFixed(1);
+    document.getElementById('water').textContent=Math.round(rnd(42,3));
+  }
+  demo(); setInterval(demo,4000);
+</script>
+</body>
+</html>
