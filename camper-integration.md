@@ -331,6 +331,22 @@ The `need_enable_console` USB file is meant to set that property to 1 but did **
 
 **Status:** ADB not yet enabled, but the path is clear and promising. **ADB is only needed for debloating** — SmartTube, Victron, maps and the custom boot logo all work without it.
 
+### Bluetooth (head unit) — no usable Android radio
+
+- Android's "Pair new device" shows **"Bluetooth address: null"** and finds nothing → the SoC's Android Bluetooth adapter is **non-functional**.
+- The only working Bluetooth is a **separate hands-free call module** wired to the MCU, used by the unit's own BT/Phone app. It pairs a **phone** for calls / voice / A2DP music only — **not** arbitrary BLE devices.
+- **Consequence:** VictronConnect (or any BLE app) **cannot** run on the head unit over its own Bluetooth. Victron data must come via the **ESP32 → Home Assistant** relay, with the head unit showing the HA dashboard in a browser over Wi-Fi (visible while driving or parked — and no Bluetooth needed).
+- **USB Bluetooth dongle (maybe):** an OTG dongle *might* give Android a real adapter. Verify before buying by checking the extracted firmware for a USB BT driver:
+  ```bash
+  find ~/Downloads/fw/vout ~/Downloads/fw/sout -iname 'btusb*' -o -iname '*bluetooth*'
+  find ~/Downloads/fw -iname '*rtl8761*' -o -iname '*.hcd' -o -iname 'rtlbt*'
+  ```
+  Prefer a **CSR8510 (BT 4.0)** dongle (generic `btusb`, no firmware upload) over Realtek RTL8761 units (e.g. **TP-Link UB600**), which need `btrtl` + a firmware file these kernels usually lack. BT 4.0 is plenty for Victron BLE.
+
+### Troubleshooting log
+
+- **Google apps (Maps/Waze) start then crash:** caused by out-of-date **Google Play Services**. Fix: Play Store → update Google Play Services (+ Maps/Waze). Clock being wrong causes the same symptom (SSL fails) — check date/time first.
+
 ---
 
 ## 9. Entertainment
