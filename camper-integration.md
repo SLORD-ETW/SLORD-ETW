@@ -110,11 +110,22 @@ A **Victron "Multi Control" panel** was found (charger + inverter LEDs, current 
 
 One Pi can run HA with Victron via MQTT, or run two Pis (Venus OS + HA) — decide at build time. The ESP32-BLE option still works for a *quick* subset but can't see the MultiPlus.
 
+**Managed lithium — a VE.Bus BMS is present.** A **Victron VE.Bus BMS** was found → the house bank is **Victron lithium (LiFePO4)**, with the BMS controlling the MultiPlus + charge/load disconnect. Consequences:
+- The GX **must** be wired per Victron's "GX device + VE.Bus BMS" topology (specific VE.Bus connection order so the GX, BMS and MultiPlus don't conflict). Follow the official diagram exactly.
+- Venus OS/GX then reads the **MultiPlus and the battery/BMS state**.
+- **Hub choice, revised for managed lithium:**
+  - Pi + Venus OS + **MK3-USB** + VE.Direct cables (~£115) — cheapest, more dongles.
+  - **Cerbo GX** (~£250) — turnkey, built-in VE.Bus + VE.Direct ports, cleanest with a VE.Bus BMS. For a system this nice, often worth it.
+- ⚠️ Confirm the **battery type** (Victron Smart Lithium cells?) and the **MultiPlus model/rating** before buying the GX/MK3.
+
 ### Fleet (as-built, Nov 2026)
 
 | Device | Serial / model | Role | Integration |
 |---|---|---|---|
-| **MultiPlus** inverter/charger | (get model from unit — rear, other side) | 230 V inverter + mains charger | **VE.Bus → MK3-USB → Venus OS** |
+| **MultiPlus** inverter/charger | 230 V AC-in (model/rating TBC) | 230 V inverter + mains charger | **VE.Bus → MK3-USB → Venus OS** |
+| **VE.Bus BMS** | 10R-05 4003 | Manages the **lithium bank**, controls MultiPlus + charge/load disconnect | VE.Bus (read via GX) |
+| House battery | Victron lithium (LiFePO4) — confirm cells | Managed by VE.Bus BMS | via BMS/GX |
+| Digital Multi Control | — | MultiPlus on/off + input current limit (set 16 A) | VE.Bus |
 | BMV-712 Smart | HQ2023WN5JS | Battery monitor (SOC/V/A/W) + relay | VE.Direct or BLE |
 | SmartSolar MPPT 75/15 | HQ2031A2JHW | Solar charge controller | VE.Direct or BLE |
 | Orion-Tr Smart 12/12-30 ×2 | HQ20309ARM1, HQ2110LRRUC (under pass. seat) | Alternator/DC-DC chargers (360 W/30 A) | BLE only |
