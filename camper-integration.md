@@ -91,6 +91,9 @@ entertainment and a single dashboard**, with **no paid connectivity plans**.
 - Mobile networks use **CGNAT**, so **port forwarding won't work**. See [section 7](#7-remote-access-tailscale) → **Tailscale**.
 - Draw is modest (USB-C, a few watts) — well within what the lithium/solar replaces.
 
+### Pull router stats into Home Assistant
+The MU5001 (ZTE) admin UI is a front-end to a hidden web API: `http://192.168.0.1/goform/goform_get_cmd_process?isTest=false&cmd=<fields>&multi_data=1` (send `Referer: http://192.168.0.1/`). HA **RESTful sensors** can poll it for: **signal** (rssi/rsrp/rsrq/SINR + bars), **network type/band** (5G/4G), **data used vs cap** (great for the plan limit — add a low-data alert), **router battery**, **connected clients**, **SMS**. Some fields may need a login-cookie session. Confirm exact field names per firmware with `curl` first, then template into sensors. Seen: SIM running on **EE**, ~10/50 GB used.
+
 ---
 
 ## 4. Victron (no GX device)
