@@ -98,24 +98,41 @@ entertainment and a single dashboard**, with **no paid connectivity plans**.
 | B. Home Assistant Victron BLE integration | Pi reads the broadcasts directly | Pi only | Pi must be in Bluetooth range of the Victron devices. |
 | C. Pi running Venus OS + VE.Direct cables | Pi acts like a Cerbo GX: VRM portal, Remote Console, full data | Pi + ~£15–30 per cable | Wired, most reliable. Only for devices with a VE.Direct port. "Large" image adds Node-RED and Signal K. |
 
-**Recommended:** start with **A**. VictronConnect on your phone still works for setup and firmware updates.
+### ⚠️ Revised plan — there's a MultiPlus, so Venus OS is the route
 
-### Fleet (discovered via BLE scan, Nov 2026)
+A **Victron "Multi Control" panel** was found (charger + inverter LEDs, current limit) → the system has a **MultiPlus inverter/charger** on **VE.Bus**. VE.Bus **cannot be read over Bluetooth**, so the simple ESP32-BLE plan would miss the inverter/charger (the heart of the system). Use the official GX approach instead:
 
-All five are Victron **Smart** (Bluetooth) devices → all support **Instant Readout** broadcasts, so one BLE gateway (ESP32/Pi) can read the lot without pairing.
+**Raspberry Pi running Venus OS = a free "virtual Cerbo GX":**
+- **MultiPlus** via an **MK3-USB** VE.Bus interface → read **and control** inverter/charger
+- **BMV-712 + SmartSolar** via **VE.Direct → USB** cables (both have VE.Direct ports)
+- **Orions / BatteryProtect / Blue Smart** (BLE-only) via Venus OS Bluetooth, or leave on VictronConnect
+- Gives **VRM** (free remote monitoring), a **Remote Console** web page, and **MQTT** → into Home Assistant for the unified panel (with the Truma ESP32 + weather).
 
-| Device | Serial | Role | Instant Readout key recorded? |
+One Pi can run HA with Victron via MQTT, or run two Pis (Venus OS + HA) — decide at build time. The ESP32-BLE option still works for a *quick* subset but can't see the MultiPlus.
+
+### Fleet (as-built, Nov 2026)
+
+| Device | Serial / model | Role | Integration |
 |---|---|---|---|
-| SmartShunt / BMV | HQ2023WN5JS | Battery monitor (SOC, V, A, W) | ☐ |
-| SmartSolar MPPT | HQ2031A2JHW | Solar charge controller | ☐ |
-| Orion Smart DC-DC #1 | HQ20309ARM1 | Alternator → leisure charger | ☐ |
-| Orion Smart DC-DC #2 | HQ2110LRRUC | DC-DC charger | ☐ |
-| BatteryProtect | HQ2002V8CSQ | Low-voltage load disconnect | ☐ |
+| **MultiPlus** inverter/charger | (get model from unit — rear, other side) | 230 V inverter + mains charger | **VE.Bus → MK3-USB → Venus OS** |
+| BMV-712 Smart | HQ2023WN5JS | Battery monitor (SOC/V/A/W) + relay | VE.Direct or BLE |
+| SmartSolar MPPT 75/15 | HQ2031A2JHW | Solar charge controller | VE.Direct or BLE |
+| Orion-Tr Smart 12/12-30 ×2 | HQ20309ARM1, HQ2110LRRUC (under pass. seat) | Alternator/DC-DC chargers (360 W/30 A) | BLE only |
+| BatteryProtect | HQ2002V8CSQ | Low-voltage load disconnect | BLE only |
+| Blue Smart IP65 12/5 | — | Small mains charger | BLE only |
+| VE.Smart Network "Rebel ve" | — | links BMV ↔ SmartSolar | — |
 
-Live sample: BMV 100% SOC, 14.00 V, 44.75 A, **627 W in** (solar + both Orions, engine running).
+Live sample: BMV 100% SOC, 14.00 V, 44.75 A, **627 W in**.
+
+### 12 V distribution (already in van — use it)
+- **CBE fuse panel** — labelled circuits incl. **two Spare 10 A**, USB/12V sockets 10 A, Water/Temp sensors 10 A, Fridge 20 A, Water Pump 20 A, Heating/Water 20 A.
+- **RP fuse panel** (second box) + an existing add-a-fuse tap.
+- **An existing DC-DC buck converter** already in the bay.
+- → **Power the Pi from a Spare 10 A fused slot** via a buck converter; no new distribution needed.
 
 ### To do
-- [ ] For **each** device: VictronConnect → ⚙ → Product info → **Instant Readout ON** + copy the **encryption key** (keep private; not in this repo)
+- [ ] Photograph the **MultiPlus** unit (rear) for model/rating → sizes the MK3-USB plan
+- [ ] For BLE-only devices: VictronConnect → ⚙ → Product info → **Instant Readout ON** + copy **encryption key** (keep private; not in this repo)
 
 > **Why not read Victron on the tablet/head unit directly:** the head unit's Android Bluetooth is `null` (unusable). The Fire tablet's Bluetooth *works* with VictronConnect (per-device viewing), but it **cannot feed a custom web panel** — Fully Kiosk's webview can't scan BLE adverts, and Termux/Python can't use Android's Bluetooth stack. So a **unified custom dashboard needs a BLE gateway** (ESP32 ESPHome `victron_ble`, or a Pi) → Home Assistant → tablet/head-unit browser. VictronConnect remains the quick per-device view.
 
