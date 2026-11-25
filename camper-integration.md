@@ -135,9 +135,33 @@ Integration depends on the **control panel**:
 - The **same ESP32** may be able to do both the Truma LIN bus and Victron BLE. Check the projects support that combination; otherwise use two boards.
 - 🔧 Confirm the community project lists the **Combi D 6** (diesel) as supported before buying parts.
 
+### ✅ Confirmed (Nov 2026): CP plus
+
+Panel board labelled **Truma CP plus — HW 04.00, SW C 04.03.00**; wall panel shows **"iNet ready"**; the **CI-BUS connector** (black RJ-style socket) is present and accessible behind the panel. → Full monitor **and** control via **ESP32 + ESPHome `truma_inetbox`** tapping the CI-BUS. Still verify the project lists **Combi D 6 (diesel)** before buying the LIN transceiver.
+
 ### To do
-- [ ] Identify panel type (photo it)
-- [ ] Check for a spare LIN port on the panel / heater
+- [x] Identify panel type → **CP plus**
+- [x] CI-BUS connector present behind panel ✅
+- [ ] Confirm `truma_inetbox` supports Combi D 6 (diesel)
+
+### As-built van catalog (Nov 2026)
+
+**Victron (power)** — all Bluetooth → ESP32 `victron_ble`:
+- BMV-712 Smart (SN HQ2023WN5JS, PN BAM030712000R) — head at the Truma/Victron panel, shunt at battery; has a NO/COM/NC relay. PUK recorded privately (not in repo).
+- SmartSolar MPPT 75/15 (HQ2031A2JHW)
+- 2× Orion Smart DC-DC (HQ20309ARM1, HQ2110LRRUC) — **under passenger seat**
+- BatteryProtect (HQ2002V8CSQ)
+- VE.Smart Network "Rebel ve" links BMV ↔ SmartSolar.
+
+**Truma (heat):** CP plus panel (above) + Combi D 6 diesel + Truma Gasfernschalter (gas remote switch).
+
+**CBE (van 12 V control system) — separate, more closed:**
+- CBE **PT622** — tank levels (fresh/waste)
+- CBE **PT638** — temperature (Int/Ext sensors)
+- CBE distribution/charger behind the panel.
+- Integration is harder (CBE bus is not well documented). **Easier path:** take room temp from Truma, add a DS18B20 on an ESP32 for outside temp, add own tank senders later — rather than tapping CBE.
+
+**Install bay:** the Victron BMV head and Truma CP plus are **side by side** with a large accessible void behind — fits the Pi + ESP32(s). Orions are a separate location (passenger seat), so a 2nd ESP32 there may be needed if BLE range from the main bay doesn't reach them.
 
 ---
 
