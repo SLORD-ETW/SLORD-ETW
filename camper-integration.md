@@ -100,14 +100,24 @@ entertainment and a single dashboard**, with **no paid connectivity plans**.
 
 **Recommended:** start with **A**. VictronConnect on your phone still works for setup and firmware updates.
 
-### To do
-- [ ] List every Victron device and whether it has Bluetooth / VE.Direct
-- [ ] Record encryption keys (keep them private)
+### Fleet (discovered via BLE scan, Nov 2026)
 
-| Device | Model | Bluetooth? | VE.Direct? | Key recorded? |
-|---|---|---|---|---|
-| | | | | |
-| | | | | |
+All five are Victron **Smart** (Bluetooth) devices → all support **Instant Readout** broadcasts, so one BLE gateway (ESP32/Pi) can read the lot without pairing.
+
+| Device | Serial | Role | Instant Readout key recorded? |
+|---|---|---|---|
+| SmartShunt / BMV | HQ2023WN5JS | Battery monitor (SOC, V, A, W) | ☐ |
+| SmartSolar MPPT | HQ2031A2JHW | Solar charge controller | ☐ |
+| Orion Smart DC-DC #1 | HQ20309ARM1 | Alternator → leisure charger | ☐ |
+| Orion Smart DC-DC #2 | HQ2110LRRUC | DC-DC charger | ☐ |
+| BatteryProtect | HQ2002V8CSQ | Low-voltage load disconnect | ☐ |
+
+Live sample: BMV 100% SOC, 14.00 V, 44.75 A, **627 W in** (solar + both Orions, engine running).
+
+### To do
+- [ ] For **each** device: VictronConnect → ⚙ → Product info → **Instant Readout ON** + copy the **encryption key** (keep private; not in this repo)
+
+> **Why not read Victron on the tablet/head unit directly:** the head unit's Android Bluetooth is `null` (unusable). The Fire tablet's Bluetooth *works* with VictronConnect (per-device viewing), but it **cannot feed a custom web panel** — Fully Kiosk's webview can't scan BLE adverts, and Termux/Python can't use Android's Bluetooth stack. So a **unified custom dashboard needs a BLE gateway** (ESP32 ESPHome `victron_ble`, or a Pi) → Home Assistant → tablet/head-unit browser. VictronConnect remains the quick per-device view.
 
 ---
 
