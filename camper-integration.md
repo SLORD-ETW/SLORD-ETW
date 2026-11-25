@@ -75,18 +75,21 @@ entertainment and a single dashboard**, with **no paid connectivity plans**.
 
 ## 3. Network: 5G hub
 
-### Checks
-- [ ] **Model/chipset:** label underneath, or admin page *About / Device info* (try `192.168.0.1`, `192.168.1.1`, `192.168.8.1`). The original OEM model can unlock better settings/firmware.
-- [ ] **Splash screen / captive portal:** look for a setting to disable it. If it can't be removed it only affects a browser's first page, not the Fire Stick, Victron or Home Assistant.
-- [ ] **Power input:** usually 12V DC barrel. Battery voltage swings ~11.5–14.6V, so confirm the accepted range or fit a **12V regulated DC-DC converter**. Fuse the feed.
-- [ ] **LAN port:** use Ethernet for the Pi if possible (more reliable than Wi-Fi).
-- [ ] **SIM lock:** confirm it takes any network's SIM.
-- [ ] **DHCP reservations:** give the Pi, ESP32, head unit and Fire Stick fixed addresses, if supported.
+### Identified: Vodafone MU5001 (ZTE-made)
+- **Portable MiFi**, Wi-Fi 6, dual-band 2.4/5 GHz. FCC ID SRQ-MU5001 (SRQ = ZTE). HW T3.
+- **Power: USB-C 5 V / 3 A** (not a 12 V barrel) — has an **internal battery**.
+- Admin page: `http://VodafoneMobile.wifi`. (Label credentials kept out of this repo; consider changing them.)
+
+### Setup for the camper
+- [ ] **Power:** run from the leisure battery via a **12 V→5 V USB-C buck** (same family as the Pi supply). Internal battery covers brief gaps.
+- [ ] **Disable Wi-Fi sleep / power-saving** in the admin page so it stays up 24/7 (portable MiFis sleep by default).
+- [ ] **External antenna:** two **TS-9 sockets** under a flap → add a **TS-9 roof/external 5G antenna** for much better signal when parked. Big, cheap win.
+- [ ] **Splash/captive page:** only affects a browser's first page, not the Fire Stick/Victron/HA.
+- [ ] **DHCP reservations:** fix addresses for the Pi, ESP32s, head unit, tablet.
 
 ### Notes
-- Mobile networks use **CGNAT**, so **port forwarding won't work**. See [section 7](#7-remote-access-tailscale).
-- Power draw ~8–15W ≈ **15–25 Ah/day** if left on 24/7. Consider auto-off at low battery.
-- 💡 *Optional later:* a GL.iNet travel router behind the hub gives a proper interface, DHCP reservations and built-in Tailscale. The hub then just supplies the 5G connection.
+- Mobile networks use **CGNAT**, so **port forwarding won't work**. See [section 7](#7-remote-access-tailscale) → **Tailscale**.
+- Draw is modest (USB-C, a few watts) — well within what the lithium/solar replaces.
 
 ---
 
