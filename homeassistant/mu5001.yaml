@@ -1,0 +1,104 @@
+# Home Assistant package — Vodafone MU5001 (ZTE) MiFi stats
+# Drop into config/packages/ (enable packages in configuration.yaml) or merge the
+# rest:/template: blocks into your config. Polls the hidden goform web API over the LAN.
+#
+# Confirmed working WITHOUT login (Nov 2026): data usage, battery, ppp status, SMS.
+# Signal fields (rsrp/rsrq/sinr/network_type) still to confirm — may need a login cookie.
+# Router IP: 192.168.0.1  (give it a DHCP reservation).
+
+rest:
+  - resource: "http://192.168.0.1/goform/goform_get_cmd_process"
+    scan_interval: 60
+    headers:
+      Referer: "http://192.168.0.1/"
+    params:
+      isTest: "false"
+      multi_data: "1"
+      cmd: "monthly_tx_bytes,monthly_rx_bytes,data_volume_limit_size,battery_vol_percent,battery_charging,ppp_status,sms_unread_num,network_type,signalbar,Z5g_rsrp,Z5g_SINR,lte_rsrp,lte_snr"
+    sensor:
+      - name: "MiFi Data Up"
+        unique_id: mifi_data_up
+        value_template: "{{ (value_json.monthly_tx_bytes | float(0)) / 1073741824 }}"
+        unit_of_measurement: "GB"
+        icon: mdi:upload
+      - name: "MiFi Data Down"
+        unique_id: mifi_data_down
+        value_template: "{{ (value_json.monthly_rx_bytes | float(0)) / 1073741824 }}"
+        unit_of_measurement: "GB"
+        icon: mdi:download
+      - name: "MiFi Data Cap"
+        unique_id: mifi_data_cap
+        # field looks like "50_1024": first part = size, 1024 = GB
+        value_template: "{{ value_json.data_volume_limit_size.split('_')[0] | float(0) }}"
+        unit_of_measurement: "GB"
+        icon: mdi:sim
+      - name: "MiFi Battery"
+        unique_id: mifi_battery
+        value_template: "{{ value_json.battery_vol_percent | int(0) }}"
+        unit_of_measurement: "%"
+        device_class: battery
+      - name: "MiFi Connected"
+        unique_id: mifi_connected
+        value_template: "{{ 'Connected' if value_json.ppp_status == 'ppp_connected' else 'Down' }}"
+        icon: mdi:web
+      - name: "MiFi SMS Unread"
+        unique_id: mifi_sms_unread
+        value_template: "{{ value_json.sms_unread_num | int(0) }}"
+        icon: mdi:message-text
+      # --- Signal (confirmed working, no login) ---
+      - name: "MiFi Network Type"
+        unique_id: mifi_network_type
+        # ENDC = 5G (NSA); LTE = 4G
+        value_template: >
+          {% set n = value_json.network_type %}
+          {{ '5G' if n in ['ENDC','NR5G','NR'] else ('4G' if 'LTE' in n or n == 'LTE' else n) }}
+        icon: mdi:signal-5g
+      - name: "MiFi Signal Bars"
+        unique_id: mifi_signal_bars
+        value_template: "{{ value_json.signalbar | int(0) }}"
+        icon: mdi:signal
+      - name: "MiFi RSRP"
+        unique_id: mifi_rsrp
+        # prefer the 5G value, fall back to LTE when on 4G
+        value_template: >
+          {{ value_json.Z5g_rsrp if value_json.Z5g_rsrp not in ['', none]
+             else value_json.lte_rsrp }}
+        unit_of_measurement: "dBm"
+        device_class: signal_strength
+      - name: "MiFi SINR"
+        unique_id: mifi_sinr
+        value_template: >
+          {{ value_json.Z5g_SINR if value_json.Z5g_SINR not in ['', none]
+             else value_json.lte_snr }}
+        unit_of_measurement: "dB"
+        icon: mdi:quality-high
+
+template:
+  - sensor:
+      - name: "MiFi Data Used"
+        unique_id: mifi_data_used
+        unit_of_measurement: "GB"
+        icon: mdi:counter
+        state: >
+          {{ (states('sensor.mifi_data_up') | float(0))
+             + (states('sensor.mifi_data_down') | float(0)) }}
+      - name: "MiFi Data Remaining"
+        unique_id: mifi_data_remaining
+        unit_of_measurement: "GB"
+        icon: mdi:gauge
+        state: >
+          {{ (states('sensor.mifi_data_cap') | float(50))
+             - (states('sensor.mifi_data_up') | float(0))
+             - (states('sensor.mifi_data_down') | float(0)) }}
+
+# Example low-data alert (add under automation:):
+# automation:
+#   - alias: "MiFi low data warning"
+#     trigger:
+#       - platform: numeric_state
+#         entity_id: sensor.mifi_data_remaining
+#         below: 5
+#     action:
+#       - service: notify.mobile_app_your_phone
+#         data:
+#           message: "MiFi data low: {{ states('sensor.mifi_data_remaining') }} GB left."
